@@ -147,6 +147,10 @@ impl Engine {
         deposit.state = DisputeState::Disputed;
         let amount = deposit.amount;
 
+        // Safety: we already validated the deposit exists above (returning early
+        // if not). Since deposits are only recorded after get_or_create_account,
+        // the account is guaranteed to exist here. A missing account would be an
+        // internal logic bug, not a partner error, so panicking is appropriate.
         self.accounts
             .get_mut(&client)
             .expect("account must exist: deposit was processed")
@@ -203,8 +207,8 @@ impl Engine {
         };
 
         // Remove the deposit record: ChargedBack is a terminal state with no
-        // further transitions, so the record is never needed again. This reclaims
-        // memory for workloads with many chargebacks.
+        // further transitions, so the record is never needed again.
+        // This reclaims memory for workloads with many chargebacks.
         // To retain charged-back records for diagnostics, comment out the remove
         // and uncomment the state mutation below it.
         self.deposits.remove(&tx);
