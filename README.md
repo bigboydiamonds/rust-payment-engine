@@ -50,6 +50,7 @@ Some interesting edge cases worth calling out:
 - Disputing a deposit after part of it was withdrawn — `available` goes negative, which is correct (the full deposit is held, but some funds are already gone)
 - Chargebacks can produce negative totals — the client effectively owes money back
 - Resolved disputes go back to `Clean`, so the same deposit can be disputed again
+- Frozen accounts only block deposits and withdrawals — disputes, resolves, and chargebacks still go through. A partner might need to reverse a deposit that happened before the freeze
 - CSV whitespace is handled via `Trim::All` on the reader, and missing amount fields on dispute/resolve/chargeback rows work fine with `flexible(true)`
 
 ## Memory / performance
