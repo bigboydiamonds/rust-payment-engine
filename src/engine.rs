@@ -11,16 +11,11 @@ use crate::transaction::Transaction;
 /// State transitions:
 ///   Clean -> Disputed  (via dispute)
 ///   Disputed -> Clean  (via resolve)
-///   Disputed -> ChargedBack  (via chargeback, terminal — record is removed)
+///   Disputed -> removed  (via chargeback — terminal, record is deleted from the map)
 #[derive(Debug, Clone, PartialEq)]
 enum DisputeState {
     Clean,
     Disputed,
-    /// Terminal state. Currently deposit records are removed on chargeback
-    /// (see `process_chargeback`), so this variant is only used if the
-    /// removal is disabled for diagnostic retention.
-    #[allow(dead_code)]
-    ChargedBack,
 }
 
 /// Record of a deposit stored for dispute resolution.
@@ -206,13 +201,9 @@ impl Engine {
             deposit.amount
         };
 
-        // Remove the deposit record: ChargedBack is a terminal state with no
-        // further transitions, so the record is never needed again.
-        // This reclaims memory for workloads with many chargebacks.
-        // To retain charged-back records for diagnostics, comment out the remove
-        // and uncomment the state mutation below it.
+        // Chargeback is terminal — no further transitions are possible, so
+        // the record is never needed again. Remove it to reclaim memory.
         self.deposits.remove(&tx);
-        // self.deposits.get_mut(&tx).unwrap().state = DisputeState::ChargedBack;
 
         self.accounts
             .get_mut(&client)
