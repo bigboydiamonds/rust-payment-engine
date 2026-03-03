@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 use csv::{ReaderBuilder, Trim, WriterBuilder};
 use rust_decimal::Decimal;
@@ -382,4 +383,90 @@ deposit,1,2,0.0001
     // 9999.9999 + 0.0001 = 10000.0000 — no precision loss at the boundary.
     assert_eq!(rows[0].available, dec!(10000));
     assert_eq!(rows[0].total, dec!(10000));
+}
+
+// ─── Fixture file tests ─────────────────────────────────────────────────────
+
+/// Run the engine against a fixture CSV file on disk and return parsed output rows.
+fn run_engine_from_file(path: &Path) -> Vec<OutputRow> {
+    let mut reader = csv_reader_builder().from_path(path).unwrap();
+
+    let mut engine = Engine::new();
+
+    for result in reader.deserialize::<RawTransaction>() {
+        let raw = match result {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        let tx = match Transaction::try_from(raw) {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        let _ = engine.process(tx);
+    }
+
+    let mut output = Vec::new();
+    {
+        let mut writer = WriterBuilder::new().from_writer(&mut output);
+        for account in engine.into_accounts() {
+            writer.serialize(&account).unwrap();
+        }
+        writer.flush().unwrap();
+    }
+
+    let mut out_reader = ReaderBuilder::new()
+        .trim(Trim::All)
+        .from_reader(output.as_slice());
+
+    out_reader
+        .deserialize::<OutputRow>()
+        .map(|r| r.unwrap())
+        .collect()
+}
+
+/// Parse an expected-output fixture CSV into OutputRows for comparison.
+fn load_expected(path: &Path) -> Vec<OutputRow> {
+    let mut reader = ReaderBuilder::new()
+        .trim(Trim::All)
+        .from_path(path)
+        .unwrap();
+    reader
+        .deserialize::<OutputRow>()
+        .map(|r| r.unwrap())
+        .collect()
+}
+
+fn assert_rows_match(actual: &[OutputRow], expected: &[OutputRow]) {
+    let actual_map = by_client(actual);
+    let expected_map = by_client(expected);
+    assert_eq!(
+        actual_map.len(),
+        expected_map.len(),
+        "client count mismatch: got {}, expected {}",
+        actual_map.len(),
+        expected_map.len()
+    );
+    for (client, exp) in &expected_map {
+        let act = actual_map
+            .get(client)
+            .unwrap_or_else(|| panic!("missing client {client} in output"));
+        assert_eq!(act.available, exp.available, "client {client} available");
+        assert_eq!(act.held, exp.held, "client {client} held");
+        assert_eq!(act.total, exp.total, "client {client} total");
+        assert_eq!(act.locked, exp.locked, "client {client} locked");
+    }
+}
+
+#[test]
+fn fixture_sample_input() {
+    let actual = run_engine_from_file(Path::new("fixtures/sample_input.csv"));
+    let expected = load_expected(Path::new("fixtures/sample_output.csv"));
+    assert_rows_match(&actual, &expected);
+}
+
+#[test]
+fn fixture_disputes() {
+    let actual = run_engine_from_file(Path::new("fixtures/disputes.csv"));
+    let expected = load_expected(Path::new("fixtures/disputes_output.csv"));
+    assert_rows_match(&actual, &expected);
 }

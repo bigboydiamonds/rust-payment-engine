@@ -38,10 +38,10 @@ src/
 
 ## Testing
 
-59 tests across three layers:
+61 tests across three layers:
 
 - **Unit tests** in `account.rs` (9), `engine.rs` (17), `transaction.rs` (12) — cover balance math, dispute lifecycle, frozen accounts, duplicate detection, CSV parsing edge cases, etc.
-- **Integration tests** in `tests/integration.rs` (21) — full CSV-in, CSV-out pipeline tests. Multi-client scenarios, dispute cycles, whitespace handling, precision, and various edge cases.
+- **Integration tests** in `tests/integration.rs` (23) — full CSV-in, CSV-out pipeline tests including fixture file comparisons. Multi-client scenarios, dispute cycles, whitespace handling, precision, and various edge cases.
 
 The project also passes `cargo clippy -- -D warnings` and `cargo fmt -- --check` with zero issues.
 
@@ -68,10 +68,11 @@ Charged-back deposits get removed from the map since they're terminal, which hel
 | `rust_decimal` | Exact decimal arithmetic for money |
 | `thiserror` | Cleaner error type definitions |
 
-## Running the fixtures
+## Running
 
 ```bash
-cargo run -- fixtures/sample_input.csv    # basic deposits/withdrawals
-cargo run -- fixtures/disputes.csv        # dispute/resolve/chargeback scenarios
+cargo run -- transactions.csv > accounts.csv   # process transactions
+cargo run -- fixtures/sample_input.csv         # run a fixture
+make check                                     # fmt + clippy + tests in one shot
 ```
 

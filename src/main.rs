@@ -16,9 +16,10 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let path = env::args()
-        .nth(1)
-        .ok_or("usage: payment_engine <transactions.csv>")?;
+    let path = env::args().nth(1).ok_or(
+        "Usage: payment_engine <transactions.csv>\n\
+         Processes a CSV of transactions and outputs client account balances to stdout.",
+    )?;
 
     let mut reader = csv_reader_builder().from_path(&path)?;
 
