@@ -12,7 +12,7 @@ Input CSV is the only argument, output goes to stdout.
 
 Transactions are processed one at a time off the CSV reader. Only deposits get stored in memory (needed later if they're disputed) — withdrawals don't need to be retained. Accounts are keyed by client ID in a HashMap.
 
-The dispute flow is a simple state machine: `Clean → Disputed → Resolved` or `Clean → Disputed → ChargedBack`. A chargeback freezes the account permanently.
+The dispute flow is a simple state machine: `Clean ↔ Disputed` (via dispute/resolve), with chargeback as a terminal transition that removes the deposit record entirely. A chargeback freezes the account permanently.
 
 ### Project layout
 
