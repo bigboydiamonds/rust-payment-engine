@@ -38,10 +38,11 @@ src/
 
 ## Testing
 
-61 tests across three layers:
+65 tests across three layers:
 
 - **Unit tests** in `account.rs` (9), `engine.rs` (17), `transaction.rs` (12) — cover balance math, dispute lifecycle, frozen accounts, duplicate detection, CSV parsing edge cases, etc.
 - **Integration tests** in `tests/integration.rs` (23) — full CSV-in, CSV-out pipeline tests including fixture file comparisons. Multi-client scenarios, dispute cycles, whitespace handling, precision, and various edge cases.
+- **CLI smoke tests** in `tests/integration.rs` (4) — run the compiled binary via `std::process::Command` against fixture files and verify stdout output matches expected results. Also test error exits for missing arguments and nonexistent files.
 
 The project also passes `cargo clippy -- -D warnings` and `cargo fmt -- --check` with zero issues.
 
