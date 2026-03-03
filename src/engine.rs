@@ -67,9 +67,7 @@ impl Engine {
     /// Callers should log errors and continue processing — these are not I/O failures.
     pub fn process(&mut self, tx: Transaction) -> Result<(), EngineError> {
         match tx {
-            Transaction::Deposit { client, tx, amount } => {
-                self.process_deposit(client, tx, amount)
-            }
+            Transaction::Deposit { client, tx, amount } => self.process_deposit(client, tx, amount),
             Transaction::Withdrawal { client, tx, amount } => {
                 self.process_withdrawal(client, tx, amount)
             }
@@ -234,7 +232,6 @@ impl Engine {
         accounts
     }
 }
-
 
 #[cfg(test)]
 mod tests {

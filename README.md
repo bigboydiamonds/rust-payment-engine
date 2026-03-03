@@ -43,6 +43,8 @@ src/
 - **Unit tests** in `account.rs` (9), `engine.rs` (17), `transaction.rs` (12) — cover balance math, dispute lifecycle, frozen accounts, duplicate detection, CSV parsing edge cases, etc.
 - **Integration tests** in `tests/integration.rs` (21) — full CSV-in, CSV-out pipeline tests. Multi-client scenarios, dispute cycles, whitespace handling, precision, and various edge cases.
 
+The project also passes `cargo clippy -- -D warnings` and `cargo fmt -- --check` with zero issues.
+
 Some interesting edge cases worth calling out:
 
 - Disputing a deposit after part of it was withdrawn — `available` goes negative, which is correct (the full deposit is held, but some funds are already gone)
