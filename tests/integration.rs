@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
+use std::process::Command;
 
 use csv::{ReaderBuilder, Trim, WriterBuilder};
 use rust_decimal::Decimal;
@@ -469,4 +470,62 @@ fn fixture_disputes() {
     let actual = run_engine_from_file(Path::new("fixtures/disputes.csv"));
     let expected = load_expected(Path::new("fixtures/disputes_output.csv"));
     assert_rows_match(&actual, &expected);
+}
+
+// ─── CLI binary tests ───────────────────────────────────────────────────────
+
+/// Run the compiled binary and parse its stdout into OutputRows.
+fn run_binary(fixture: &str) -> (Vec<OutputRow>, std::process::Output) {
+    let bin = env!("CARGO_BIN_EXE_payment_engine");
+    let output = Command::new(bin)
+        .arg(fixture)
+        .output()
+        .expect("failed to execute binary");
+    let rows = if output.stdout.is_empty() {
+        vec![]
+    } else {
+        let mut reader = ReaderBuilder::new()
+            .trim(Trim::All)
+            .from_reader(output.stdout.as_slice());
+        reader
+            .deserialize::<OutputRow>()
+            .map(|r| r.unwrap())
+            .collect()
+    };
+    (rows, output)
+}
+
+#[test]
+fn cli_sample_input() {
+    let (actual, output) = run_binary("fixtures/sample_input.csv");
+    assert!(output.status.success());
+    let expected = load_expected(Path::new("fixtures/sample_output.csv"));
+    assert_rows_match(&actual, &expected);
+}
+
+#[test]
+fn cli_disputes() {
+    let (actual, output) = run_binary("fixtures/disputes.csv");
+    assert!(output.status.success());
+    let expected = load_expected(Path::new("fixtures/disputes_output.csv"));
+    assert_rows_match(&actual, &expected);
+}
+
+#[test]
+fn cli_missing_arg_exits_with_error() {
+    let bin = env!("CARGO_BIN_EXE_payment_engine");
+    let output = Command::new(bin)
+        .output()
+        .expect("failed to execute binary");
+    assert!(!output.status.success());
+}
+
+#[test]
+fn cli_nonexistent_file_exits_with_error() {
+    let bin = env!("CARGO_BIN_EXE_payment_engine");
+    let output = Command::new(bin)
+        .arg("does_not_exist.csv")
+        .output()
+        .expect("failed to execute binary");
+    assert!(!output.status.success());
 }
